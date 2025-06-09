@@ -14,6 +14,26 @@
 
 ---
 
+## 2. Running `bathsearch` on your .fna/.fasta file
+
+### A. On an HPC with SLURM (sbatch)
+
+```bash
+COMMAND TBA
+```
+
+> **ETA:** Roughly 1–2 h for a 100 MB genome, depending on CPU count.
+
+### B. On a Local Machine
+
+```bash
+COMMAND TBA
+```
+
+> **ETA:** \~30 min for a 50 MB FASTA on 4 CPUs.
+
+---
+
 ## 1. Preprocessing HMMs
 
 1. **Convert each `.hmm` to a BATH-compatible database**  
@@ -40,26 +60,6 @@
      ```bash
      export BATH_DB=/path/to/All_KOfamDB_<newdate>.bhmm
      ```
-
----
-
-## 2. Running `bathsearch`
-
-### A. On an HPC with SLURM (sbatch)
-
-```bash
-COMMAND TBA
-```
-
-> **ETA:** Roughly 1–2 h for a 100 MB genome, depending on CPU count.
-
-### B. On a Local Machine
-
-```bash
-COMMAND TBA
-```
-
-> **ETA:** \~30 min for a 50 MB FASTA on 4 CPUs.
 
 ---
 
