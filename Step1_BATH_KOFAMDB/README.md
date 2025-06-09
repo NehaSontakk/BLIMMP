@@ -14,7 +14,7 @@
 
 ---
 
-## 2. Running `bathsearch` on your .fna/.fasta file
+## 1. Running `bathsearch` on your .fna/.fasta file
 
 ### A. On an HPC with SLURM (sbatch)
 
@@ -34,7 +34,7 @@ COMMAND TBA
 
 ---
 
-## 1. Preprocessing HMMs
+## 2. Preprocessing HMMs (OPTIONAL: If updated hmms are required)
 
 1. **Convert each `.hmm` to a BATH-compatible database**  
    ```bash
