@@ -434,6 +434,21 @@ def completeness_float(x):
         raise argparse.ArgumentTypeError(f"completeness must be between 0.0 and 1.0, got {f}")
     return f  
 
+def existing_nonempty_tbl(path):
+    # 1) check extension
+    if not (path.endswith(".tblout") or path.endswith(".domtblout")):
+        raise argparse.ArgumentTypeError(
+            f"‘{path}’ must end in .tblout or .domtblout"
+        )
+    # 2) check file exists
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"File not found: {path}")
+    # 3) check non-empty
+    if os.path.getsize(path) == 0:
+        raise argparse.ArgumentTypeError(f"File is empty: {path}")
+    return path
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
     parser.add_argument('file', help='Path to the .tblout or .domtblout file')
