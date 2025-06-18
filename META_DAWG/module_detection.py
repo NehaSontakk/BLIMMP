@@ -439,13 +439,13 @@ if __name__ == '__main__':
     parser.add_argument('file', help='Path to the .tblout or .domtblout file')
     parser.add_argument('-f', '--format', choices=['tbl','domtblout'], required=True,
                         help='Specify which HMMER output format to parse')
-    parser.add_argument('-s','--completeness', type=completeness_float,default=1.0,help='Completeness of sample obtained via CHECKM or BUSCO (0.0–1.0). Defaults to 1.0.')
+    parser.add_argument('-c','--completeness', type=completeness_float,default=1.0,help='Completeness of sample obtained via CHECKM or BUSCO (0.0–1.0). Defaults to 1.0.')
     parser.add_argument('-o', '--output', required=True,
                         help='Output prefix or directory for CSV reports')
     args = parser.parse_args()
 
     sample = os.path.basename(args.file).split('.')[0]
-    sigma = args.sigma
+    sigma = args.completeness
     if not (0.0 <= sigma <= 1.0):
         parser.error(f"--sigma must be between 0 and 1, but you passed {sigma}")
     print(f"Processing sample {sample} with sigma={sigma}")
