@@ -443,13 +443,14 @@ def run_module_detection(input_file, fmt, sigma, output_prefix):
         parser.error(f"--sigma must be between 0 and 1, but you passed {sigma}")
     print(f"Processing sample {sample} with sigma={sigma}")
     
+    HERE = os.path.dirname(__file__)
     #"KEGG_Graphs_Generated"
-    MODULE_JSON_DIR = "/content/drive/MyDrive/Lab Work/Results_for_PNNL_March_2025/Graph_Generation/KEGG_Graphs_Generated/"
+    MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
     ko_to_modules_str=modules_to_kos()
     #ko_occ = read_ko_occurence_txt('ko_occurences.txt')
-    ko_occ = read_ko_occurence_txt('/content/drive/MyDrive/Lab Work/Results_for_PNNL_March_2025/ko_occurences.txt')
+    KO_OCC_TXT     = os.path.join(HERE, "Data_Dependencies", "ko_occurences.txt")
     #adj = make_neighbor_dictionary('ko_normalized_prediction.txt')
-    adj = make_neighbor_dictionary('/content/drive/MyDrive/Lab Work/Results_for_PNNL_March_2025/ko_normalized_prediction.txt')
+    KO_NEIGH_TXT   = os.path.join(HERE, "Data_Dependencies", "ko_normalized_prediction.txt")
 
     # Parse input
     if args.format == 'tbl':
