@@ -451,7 +451,8 @@ def existing_nonempty_tbl(path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
-    parser.add_argument('file', help='Path to the .tblout or .domtblout file')
+    #parser.add_argument('file', help='Path to the .tblout or .domtblout file')
+    parser.add_argument('file',type=existing_nonempty_tbl,help='Path to the .tblout or .domtblout file (must exist, be non-empty, and have correct extension)')
     parser.add_argument('-f', '--format', choices=['tbl','domtblout'], required=True,
                         help='Specify which HMMER output format to parse')
     parser.add_argument('-c','--completeness', type=completeness_float,default=1.0,help='Completeness of sample obtained via CHECKM or BUSCO (0.0–1.0). Defaults to 1.0.')
