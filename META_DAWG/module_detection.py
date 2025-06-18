@@ -424,15 +424,22 @@ def export_module_data_with_best_path(
 
     print(f"Wrote enriched modules + best‐path JSON to {output_path}")
 
-  
+def completeness_float(x):
+    """Argparse type: float in [0.0,1.0]."""
+    try:
+        f = float(x)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{x!r} is not a valid float")
+    if not 0.0 <= f <= 1.0:
+        raise argparse.ArgumentTypeError(f"completeness must be between 0.0 and 1.0, got {f}")
+    return f  
 
-def run_module_detection(input_file, fmt, sigma, output_prefix):
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
     parser.add_argument('file', help='Path to the .tblout or .domtblout file')
     parser.add_argument('-f', '--format', choices=['tbl','domtblout'], required=True,
                         help='Specify which HMMER output format to parse')
-    parser.add_argument('-s', '--sigma', type=float, required=True,
-                        help='Sigma value to use in Dk calculation')
+    parser.add_argument('-s','--completeness', type=completeness_float,default=1.0,help='Completeness of sample obtained via CHECKM or BUSCO (0.0–1.0). Defaults to 1.0.')
     parser.add_argument('-o', '--output', required=True,
                         help='Output prefix or directory for CSV reports')
     args = parser.parse_args()
@@ -542,4 +549,3 @@ def run_module_detection(input_file, fmt, sigma, output_prefix):
             
         print(f"Diagram reports written to {out_pref}_nodes_enriched.csv")
         print(f"Open HTML file index.html in a local browser. Upload {out_pref}_nodes_enriched.json when prompted.")
-    return 0
