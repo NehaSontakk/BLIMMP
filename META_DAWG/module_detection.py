@@ -436,7 +436,7 @@ def completeness_float(x):
 
 def existing_nonempty_tbl(path):
     # 1) check extension
-    if not (path.endswith(".tblout") or path.endswith(".domtblout")):
+    if not (path.endswith(".tbl") or path.endswith(".domtblout")):
         raise argparse.ArgumentTypeError(
             f"‘{path}’ must end in .tblout or .domtblout"
         )
