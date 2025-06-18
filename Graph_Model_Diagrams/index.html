@@ -1,1 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Module Graph Viewer</title>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --accent: #3498db;
+      --light: #ecf0f1;
+      --dark: #34495e;
+      --radius: 4px;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--light);
+      color: var(--primary);
+      text-align: center;
+    }
+
+    #header-container h1 {
+      margin: 20px 0;
+      font-size: 2rem;
+      color: var(--dark);
+    }
+
+    /* Toolbar container */
+    #toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Shared input/button styles */
+    .tool {
+      font-size: 1rem;
+      border-radius: var(--radius);
+      border: 1px solid #ccc;
+      padding: 0.5rem 0.75rem;
+      transition: border-color 0.2s ease;
+    }
+    .tool:focus,
+    .tool:hover {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    /* Search box */
+    #moduleInput {
+      width: 180px;
+    }
+
+    /* Search button */
+    #searchBtn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #searchBtn:hover {
+      background: #2980b9;
+    }
+
+    /* File-upload styling */
+    .file-upload {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-upload input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .file-upload .tool {
+      background: white;
+      cursor: pointer;
+    }
+
+    /* Toggle switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: var(--radius);
+      transition: 0.2s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Center graph */
+    #graph-container svg {
+      display: block;
+      margin: 100px auto 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="header-container">
+    <h1>MODULE VIEWER</h1>
+  </div>
+
+  <div id="toolbar">
+    <!-- Search with autocomplete -->
+    <input list="modules" id="moduleInput" class="tool" placeholder="e.g. M00001" maxlength="6" />
+    <datalist id="modules">
+      <!-- Dynamically populate options in JS -->
+      <option value="M00001">
+      <option value="M00002">
+      <option value="M00003">
+      <!-- …etc. -->
+    </datalist>
+    <button id="searchBtn" class="tool">Search</button>
+
+    <!-- Custom-styled file upload -->
+    <label class="file-upload">
+      <span class="tool">Upload nodes JSON</span>
+      <input type="file" id="nodeJsonUpload" accept=".json" />
+    </label>
+
+    <!-- Toggle switch for neighbor-updated Dk -->
+    <label class="switch">
+      <input type="checkbox" id="neighborToggle">
+      <span class="slider"></span>
+    </label>
+    <span style="line-height:24px; font-size:0.9rem;">Show Neighbor-Updated Dk</span>
+  </div>
+
+  <div id="graph-container"></div>
+
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://unpkg.com/dagre/dist/dagre.min.js"></script>
+  <script type="module" src="script.js"></script>
+  <script type="module" src="moduleSelector.js"></script>
+</body>
+</html>
 
