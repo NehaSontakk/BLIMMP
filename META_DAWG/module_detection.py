@@ -7,6 +7,7 @@ import numpy as np
 from math import exp
 import json
 import argparse
+import zipfile
 
 #Process TBL file
 
@@ -469,6 +470,23 @@ if __name__ == '__main__':
     HERE = os.path.dirname(__file__)
     #"KEGG_Graphs_Generated"
     MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
+    #Check if module files unzipped
+    zip_dir = MODULE_JSON_DIR
+    zip_files = glob.glob(os.path.join(zip_dir, "*.zip"))
+    if zip_files:
+        print(f"Found {len(zip_files)} ZIP file(s) in {zip_dir}, extracting…")
+        for z in zip_files:
+            try:
+                with zipfile.ZipFile(z, 'r') as archive:
+                    archive.extractall(zip_dir)
+                print(f"  • Extracted {os.path.basename(z)}")
+            except zipfile.BadZipFile:
+                print(f"  ! Skipped invalid ZIP: {os.path.basename(z)}")
+
+
+
+
+    
     ko_to_modules_str=modules_to_kos()
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
     ko_occ = read_ko_occurence_txt(ko_occ_path)
