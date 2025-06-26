@@ -498,13 +498,13 @@ if __name__ == '__main__':
     else:
         print(f"No zip files found under {GD}")
 
-    node_count = len(glob.glob(os.path.join(MODULE_PARENT_DIR, "module_*_nodes.json")))
-    path_count = len(glob.glob(os.path.join(MODULE_PARENT_DIR, "module_*_paths.json")))
-    print(f"Module JSON discovery: {node_count} node files, {path_count} path files")
+    UNZIP_SUBDIR = os.path.join(MODULE_JSON_DIR, "KEGG_Module_Graphs")
+    node_count = len(glob.glob(os.path.join(UNZIP_SUBDIR, "module_*_nodes.json")))
+    path_count = len(glob.glob(os.path.join(UNZIP_SUBDIR, "module_*_paths.json")))
+    print(f"Module JSON discovery in {UNZIP_SUBDIR}: {node_count} node files, {path_count} path files")
 
     MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated/KEGG_Module_Graphs/")
 
-    
     ko_to_modules_str=modules_to_kos()
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
     ko_occ = read_ko_occurence_txt(ko_occ_path)
