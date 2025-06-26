@@ -466,17 +466,16 @@ if __name__ == '__main__':
     if not (0.0 <= sigma <= 1.0):
         parser.error(f"--sigma must be between 0 and 1, but you passed {sigma}")
     print(f"Processing sample {sample} with sigma={sigma}")
-    
-    HERE = os.path.dirname(__file__)
+
     #"KEGG_Graphs_Generated"
-    #MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
     #Check if module files unzipped
-        HERE = os.path.dirname(__file__)
+    HERE = os.path.dirname(__file__)
+
     GD = os.path.join(HERE, "Graph_Dependencies")
-    MODULE_JSON_DIR = os.path.join(GD, "KEGG_Graphs_Generated")
+    MODULE_PARENT_DIR = os.path.join(GD, "KEGG_Graphs_Generated")
 
     # 1) Ensure the target folder exists
-    os.makedirs(MODULE_JSON_DIR, exist_ok=True)
+    os.makedirs(MODULE_PARENT_DIR, exist_ok=True)
 
     # 2) Recursively locate any .zip files under Graph_Dependencies
     zip_paths = []
@@ -487,11 +486,11 @@ if __name__ == '__main__':
 
     # 3) Extract them into MODULE_JSON_DIR
     if zip_paths:
-        print(f"Found {len(zip_paths)} zip file(s) under {GD}, extracting to {MODULE_JSON_DIR}…")
+        print(f"Found {len(zip_paths)} zip file(s) under {GD}, extracting to {MODULE_PARENT_DIR}…")
         for zp in zip_paths:
             try:
                 with zipfile.ZipFile(zp, 'r') as archive:
-                    archive.extractall(MODULE_JSON_DIR)
+                    archive.extractall(MODULE_PARENT_DIR)
                 rel = os.path.relpath(zp, GD)
                 print(f"  • Extracted {rel}")
             except zipfile.BadZipFile:
@@ -499,10 +498,11 @@ if __name__ == '__main__':
     else:
         print(f"No zip files found under {GD}")
 
-    # 4) Report what JSONs are now present
-    node_count = len(glob.glob(os.path.join(MODULE_JSON_DIR, "module_*_nodes.json")))
-    path_count = len(glob.glob(os.path.join(MODULE_JSON_DIR, "module_*_paths.json")))
+    node_count = len(glob.glob(os.path.join(MODULE_PARENT_DIR, "module_*_nodes.json")))
+    path_count = len(glob.glob(os.path.join(MODULE_PARENT_DIR, "module_*_paths.json")))
     print(f"Module JSON discovery: {node_count} node files, {path_count} path files")
+
+    MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated/KEGG_Module_Graphs/")
 
     
     ko_to_modules_str=modules_to_kos()
