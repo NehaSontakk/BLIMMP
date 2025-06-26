@@ -142,15 +142,18 @@
   </div>
 
   <div id="toolbar">
-    <!-- Search with autocomplete -->
     <input list="modules" id="moduleInput" class="tool" placeholder="e.g. M00001" maxlength="6" />
-    <datalist id="modules">
-      <!-- Dynamically populate options in JS -->
-      <option value="M00001">
-      <option value="M00002">
-      <option value="M00003">
-      <!-- …etc. -->
-    </datalist>
+    <datalist id="modules"></datalist>
+    <script src="./modules.js"></script>
+    <script>
+      // MODULES is now defined as a global array
+      const datalist = document.getElementById('modules');
+      MODULES.forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        datalist.appendChild(opt);
+      });
+    </script>
     <button id="searchBtn" class="tool">Search</button>
 
     <!-- Custom-styled file upload -->
@@ -175,4 +178,3 @@
   <script type="module" src="moduleSelector.js"></script>
 </body>
 </html>
-

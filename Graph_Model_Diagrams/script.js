@@ -28,67 +28,107 @@ function getSvgDims() {
 }
 
 // Main render function
-export function renderGraph(nodes, links) {
-  currentNodes = nodes;
-  currentLinks = links;
+export function renderGraph(rawNodes, rawLinks) {
+  currentNodes = rawNodes;
+  currentLinks = rawLinks;
 
-  // Clear container
   const { w: SVG_W, h: SVG_H } = getSvgDims();
-  d3.select('#graph-container').html('');
-
-  const svg = d3.select('#graph-container')
+  const svg = d3.select('#graph-container').html('')
     .append('svg')
-    .attr('width', SVG_W)
-    .attr('height', SVG_H)
-    .style('margin', `${TOP_OFFSET}px auto 0`)
-    .attr('viewBox', `0 0 ${SVG_W} ${SVG_H}`)
+      .attr('width', SVG_W)
+      .attr('height', SVG_H)
+      .style('margin', `${TOP_OFFSET}px auto 0`)
+      .attr('viewBox', `0 0 ${SVG_W} ${SVG_H}`)
     .append('g');
 
-  // Arrow marker definition
-  svg.append('defs').append('marker')
-    .attr('id','arrowhead')
-    .attr('viewBox','-0 -5 10 10')
-    .attr('refX',35)
-    .attr('refY',0)
-    .attr('orient','auto')
-    .attr('markerWidth',4)
-    .attr('markerHeight',4)
-    .append('path')
-    .attr('d','M 0,-5 L 10,0 L 0,5')
-    .attr('fill','currentColor');
+  // arrowhead marker
+  const defs = svg.append('defs');
 
-  // Layout nodes
-  const { nodes: layNodes, links: layLinks } = sugiyamaLayout(nodes, links);
+defs.append('marker')
+    .attr('id', 'arrowhead')
+    .attr('viewBox', '-0 -5 10 10')
+    .attr('refX', 8)                // push the arrow tip just beyond the end of your path
+    .attr('refY', 0)
+    .attr('orient', 'auto')         // rotate to match path direction
+    .attr('markerUnits', 'strokeWidth') // scales marker size with stroke width
+    .attr('markerWidth', 6)
+    .attr('markerHeight', 6)
+  .append('path')
+    .attr('d', 'M 0,-5 L 10,0 L 0,5')  // classic triangle
+    .attr('fill', 'currentColor');
 
-  // Plot order: links below nodes
-  plotLinks(layLinks, svg);
-  plotNodes(layNodes, svg);
+  // Layout + render
+  const layout = sugiyamaLayout(rawNodes, rawLinks);
+  plotLinks(layout, svg);
+  plotNodes(layout.nodes, svg);
   addLegends(svg, SVG_W);
 
-  // Redraw on resize
+  // Resizing
   window.addEventListener('resize', () => renderGraph(currentNodes, currentLinks));
 }
 
 // Sugiyama layout
-function sugiyamaLayout(nodes, links) {
-  const g = new dagre.graphlib.Graph().setGraph({ rankdir:'TB', nodesep:20, ranksep:50 });
-  g.setDefaultEdgeLabel(() => ({}));
-  nodes.forEach(n => g.setNode(n.id, { width:40, height:40 }));
-  links.forEach(l => g.setEdge(l.source, l.target));
+function sugiyamaLayout(rawNodes, rawLinks) {
+  // clone so we don’t mutate the user’s arrays in place
+  const nodes = rawNodes.map(n => ({ ...n }));
+  const links = rawLinks.map(l => ({ ...l }));
+
+  // 1. Build Dagre graph
+  const g = new dagre.graphlib.Graph()
+    .setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 100 })
+    .setDefaultEdgeLabel(() => ({}));
+
+  // 2. Add nodes (force string keys, trimmed)
+  nodes.forEach(n => {
+    n._key = String(n.id).trim();
+    g.setNode(n._key, { width: 40, height: 40 });
+  });
+
+  // 3. Add edges
+  links.forEach(l => {
+    l._src = String(l.source).trim();
+    l._tgt = String(l.target).trim();
+    g.setEdge(l._src, l._tgt);
+  });
+
+  // 4. Run layout
   dagre.layout(g);
 
+  // 5. Build scales once
   const { w: SVG_W } = getSvgDims();
   const { width: gW, height: gH } = g.graph();
   const xScale = d3.scaleLinear().domain([0, gW]).range([PAD_L, SVG_W - PAD_R]);
   const yScale = d3.scaleLinear().domain([0, gH]).range([PAD_T, BASE_SVG_H - PAD_B]);
 
+  // 6. Assign x/y to each node
   nodes.forEach(n => {
-    const p = g.node(n.id);
-    n.x = xScale(p.x);
-    n.y = yScale(p.y);
+    const p = g.node(n._key);
+    if (!p) {
+      console.error(`Missing layout for node ${n.id}`, g.nodes());
+      n.x = PAD_L; n.y = PAD_T;
+    } else {
+      n.x = xScale(p.x);
+      n.y = yScale(p.y);
+    }
   });
+
+  // 7. Compute and attach a scaled `points` array to each link
+  links.forEach(l => {
+    const e = g.edge(l._src, l._tgt);
+    if (!e) {
+      console.error(`Missing edge routing for ${l.source}→${l.target}`, g.edges());
+      l.points = [ {x:PAD_L, y:PAD_T}, {x:PAD_L+10, y:PAD_T+10} ];
+    } else {
+      l.points = e.points.map(pt => ({
+        x: xScale(pt.x),
+        y: yScale(pt.y)
+      }));
+    }
+  });
+
   return { nodes, links };
 }
+
 
 // Plot nodes
 function plotNodes(nodes, svg) {
@@ -152,22 +192,21 @@ function plotNodes(nodes, svg) {
         .attr('fill','none')
         .attr('stroke','black')
         .attr('stroke-width',1);
-
-    g.append('text')
-      .text(d.id)                     // KO number
-      .attr('text-anchor', 'middle')  // center horizontally
-      .attr('y', -r - 4)              // float just above the top edge; adjust “4” px padding as needed
-      .attr('font-size', '12px')      // fixed size for all labels
-      .attr('fill', '#000')           // color for contrast
-      .attr('font-weight','bold')
-      .attr('pointer-events', 'none'); // so it doesn’t block hover on the circle
        
       }
 
+      g.append('text')
+      .text(d.id.replace(/_[0-9]+$/, ''))   // strip trailing “_1”
+      .attr('text-anchor', 'middle')
+      .attr('y', r + 14)
+      .attr('font-size', '12px')
+      .attr('fill', '#000')
+      .attr('pointer-events', 'none');
+
       // Tooltip events
       g.on('mouseover', (event) => {
-        tooltip.transition().duration(200).style('opacity', 0.9);
-        tooltip.html(`KO: ${d.id}<br/>Dk_before: ${d.Dk_before}<br/>Dk_after: ${d.Dk_after}<br/>E-value: ${d['E-value']}`)
+        tooltip.transition().duration(200).style('opacity', 0.98);
+        tooltip.html(`KO: ${d.id.replace(/_[0-9]+$/, '')}<br/>Dk_before: ${d.Dk_before}<br/>Dk_after: ${d.Dk_after}<br/>E-value: ${d['E-value']}`)
           .style('left', (event.pageX + 5) + 'px')
           .style('top',  (event.pageY - 28) + 'px');
       })
@@ -178,22 +217,38 @@ function plotNodes(nodes, svg) {
 }
 
 // Plot links
-function plotLinks(links, svg) {
-  const nodeById = new Map(currentNodes.map(d => [d.id, d]));
-  const occExtent = d3.extent(links, d => d.edge_occurence);
+function plotLinks({ links }, svg) {
+  const occExtent  = d3.extent(links, d => d.edge_occurence);
   const colorScale = d3.scaleSequential(t => d3.interpolateGreys(0.5 + 0.8*t)).domain(occExtent);
   const widthScale = d3.scaleLinear().domain(occExtent).range([1,3]);
 
   const linkG = svg.append('g').attr('class','links');
-  linkG.selectAll('line').data(links).enter().append('line')
-    .attr('x1', d => nodeById.get(d.source).x)
-    .attr('y1', d => nodeById.get(d.source).y)
-    .attr('x2', d => nodeById.get(d.target).x)
-    .attr('y2', d => nodeById.get(d.target).y)
-    .attr('stroke', d => colorScale(d.edge_occurence))
-    .attr('stroke-width', d => widthScale(d.edge_occurence))
-    .attr('marker-end','url(#arrowhead)');
+
+  linkG.selectAll('path')
+    .data(links)
+    .enter().append('path')
+      .attr('d', d => {
+        // If you prefer straight cornered edges, switch to curveStep
+        return d3.line()
+          .x(p => p.x)
+          .y(p => p.y)
+          .curve(d3.curveBasis)(d.points);
+      })
+      .attr('fill','none')
+      .attr('stroke', d => colorScale(d.edge_occurence))
+      .attr('stroke-width', d => widthScale(d.edge_occurence))
+      .attr('marker-end','url(#arrowhead)')
+      .on('mouseover', (evt,d) => {
+        tooltip.transition().duration(200).style('opacity',0.9)
+               .html(`Edge Occurrence: ${d.edge_occurence}`)
+               .style('left',`${evt.pageX+5}px`)
+               .style('top',`${evt.pageY-28}px`);
+      })
+      .on('mouseout', () => tooltip.transition().duration(500).style('opacity',0));
 }
+
+
+
 
 // Legends for color scales
 function addLegends(svg, SVG_W) {
@@ -298,5 +353,4 @@ function addLegends(svg, SVG_W) {
       .text("E-value");
   }
   
-
 

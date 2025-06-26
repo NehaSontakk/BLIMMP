@@ -1,9 +1,10 @@
 // moduleSelector.js
+
 import { renderGraph } from "./script.js";
 
 // URLs for your fallback JSON data
-export const nodesURL     = "https://raw.githubusercontent.com/NehaSontakk/Graph-Viz/refs/heads/main/all_module_nodes_sorted_by_group_Apr15.json";
-export const adjacencyURL = "https://raw.githubusercontent.com/NehaSontakk/Graph-Viz/refs/heads/main/all_module_adjacency_links_Apr3.json";
+export const nodesURL     = "https://raw.githubusercontent.com/NehaSontakk/Graph-Viz/refs/heads/main/all_module_nodes.json";
+export const adjacencyURL = "https://raw.githubusercontent.com/NehaSontakk/Graph-Viz/refs/heads/main/all_module_adjacency_links.json";
 
 // State holders
 let uploadedNodesData = null;
@@ -92,8 +93,11 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       const moduleLinks = adjObj.links;
 
+      // Store for toggle re-render
       window.currentModuleNodes = moduleNodes;
       window.currentModuleLinks = moduleLinks;
+
+      // Render
       renderGraph(moduleNodes, moduleLinks);
     } catch (err) {
       console.error(err);
@@ -101,4 +105,3 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
