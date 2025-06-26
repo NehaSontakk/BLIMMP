@@ -471,21 +471,23 @@ if __name__ == '__main__':
     #"KEGG_Graphs_Generated"
     MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
     #Check if module files unzipped
-    zip_dir = MODULE_JSON_DIR
-    zip_files = glob.glob(os.path.join(zip_dir, "*.zip"))
+    MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
+    PARENT_DIR      = os.path.dirname(MODULE_JSON_DIR)
+    
+    # make sure the output dir exists
+    os.makedirs(MODULE_JSON_DIR, exist_ok=True)
+    
+    # look for zips in the parent folder
+    zip_files = glob.glob(os.path.join(PARENT_DIR, "*.zip"))
     if zip_files:
-        print(f"Found {len(zip_files)} ZIP file(s) in {zip_dir}, extracting…")
+        print(f"Found {len(zip_files)} ZIP file(s) in {PARENT_DIR}; extracting into {MODULE_JSON_DIR}…")
         for z in zip_files:
             try:
                 with zipfile.ZipFile(z, 'r') as archive:
-                    archive.extractall(zip_dir)
+                    archive.extractall(MODULE_JSON_DIR)
                 print(f"  • Extracted {os.path.basename(z)}")
             except zipfile.BadZipFile:
                 print(f"  ! Skipped invalid ZIP: {os.path.basename(z)}")
-
-
-
-
     
     ko_to_modules_str=modules_to_kos()
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
