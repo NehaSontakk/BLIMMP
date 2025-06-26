@@ -472,7 +472,7 @@ if __name__ == '__main__':
     ko_to_modules_str=modules_to_kos()
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
     ko_occ = read_ko_occurence_txt(ko_occ_path)
-    adj_path   = os.path.join(HERE, "Data_Dependencies", "ko_normalized_prediction.txt")
+    adj_path   = os.path.join(HERE, "Data_Dependencies", "ko_neighbors.txt")
     adj = make_neighbor_dictionary(adj_path)
 
     # Parse input
