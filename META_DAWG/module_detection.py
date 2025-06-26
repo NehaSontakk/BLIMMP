@@ -469,25 +469,41 @@ if __name__ == '__main__':
     
     HERE = os.path.dirname(__file__)
     #"KEGG_Graphs_Generated"
-    MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
+    #MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
     #Check if module files unzipped
-    MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
-    PARENT_DIR      = os.path.dirname(MODULE_JSON_DIR)
-    
-    # make sure the output dir exists
+        HERE = os.path.dirname(__file__)
+    GD = os.path.join(HERE, "Graph_Dependencies")
+    MODULE_JSON_DIR = os.path.join(GD, "KEGG_Graphs_Generated")
+
+    # 1) Ensure the target folder exists
     os.makedirs(MODULE_JSON_DIR, exist_ok=True)
-    
-    # look for zips in the parent folder
-    zip_files = glob.glob(os.path.join(PARENT_DIR, "*.zip"))
-    if zip_files:
-        print(f"Found {len(zip_files)} ZIP file(s) in {PARENT_DIR}; extracting into {MODULE_JSON_DIR}…")
-        for z in zip_files:
+
+    # 2) Recursively locate any .zip files under Graph_Dependencies
+    zip_paths = []
+    for root, _, files in os.walk(GD):
+        for fname in files:
+            if fname.lower().endswith('.zip'):
+                zip_paths.append(os.path.join(root, fname))
+
+    # 3) Extract them into MODULE_JSON_DIR
+    if zip_paths:
+        print(f"Found {len(zip_paths)} zip file(s) under {GD}, extracting to {MODULE_JSON_DIR}…")
+        for zp in zip_paths:
             try:
-                with zipfile.ZipFile(z, 'r') as archive:
+                with zipfile.ZipFile(zp, 'r') as archive:
                     archive.extractall(MODULE_JSON_DIR)
-                print(f"  • Extracted {os.path.basename(z)}")
+                rel = os.path.relpath(zp, GD)
+                print(f"  • Extracted {rel}")
             except zipfile.BadZipFile:
-                print(f"  ! Skipped invalid ZIP: {os.path.basename(z)}")
+                print(f"  ! Skipped invalid zip: {os.path.basename(zp)}")
+    else:
+        print(f"No zip files found under {GD}")
+
+    # 4) Report what JSONs are now present
+    node_count = len(glob.glob(os.path.join(MODULE_JSON_DIR, "module_*_nodes.json")))
+    path_count = len(glob.glob(os.path.join(MODULE_JSON_DIR, "module_*_paths.json")))
+    print(f"Module JSON discovery: {node_count} node files, {path_count} path files")
+
     
     ko_to_modules_str=modules_to_kos()
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
