@@ -470,7 +470,6 @@ if __name__ == '__main__':
     #"KEGG_Graphs_Generated"
     #Check if module files unzipped
     HERE = os.path.dirname(__file__)
-
     GD = os.path.join(HERE, "Graph_Dependencies")
     MODULE_PARENT_DIR = os.path.join(GD, "KEGG_Graphs_Generated")
 
@@ -484,7 +483,7 @@ if __name__ == '__main__':
             if fname.lower().endswith('.zip'):
                 zip_paths.append(os.path.join(root, fname))
 
-    # 3) Extract them into MODULE_JSON_DIR
+    # 3) Extract them into MODULE_PARENT_DIR and delete zips
     if zip_paths:
         print(f"Found {len(zip_paths)} zip file(s) under {GD}, extracting to {MODULE_PARENT_DIR}…")
         for zp in zip_paths:
@@ -493,6 +492,9 @@ if __name__ == '__main__':
                     archive.extractall(MODULE_PARENT_DIR)
                 rel = os.path.relpath(zp, GD)
                 print(f"  • Extracted {rel}")
+                # Delete the original zip
+                os.remove(zp)
+                print(f"  • Deleted zip: {rel}")
             except zipfile.BadZipFile:
                 print(f"  ! Skipped invalid zip: {os.path.basename(zp)}")
     else:
