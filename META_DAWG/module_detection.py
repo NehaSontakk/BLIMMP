@@ -500,7 +500,7 @@ if __name__ == '__main__':
     else:
         print(f"No zip files found under {GD}")
 
-    UNZIP_SUBDIR = os.path.join(MODULE_JSON_DIR, "KEGG_Module_Graphs")
+    UNZIP_SUBDIR = os.path.join(MODULE_PARENT_DIR, "KEGG_Module_Graphs")
     node_count = len(glob.glob(os.path.join(UNZIP_SUBDIR, "module_*_nodes.json")))
     path_count = len(glob.glob(os.path.join(UNZIP_SUBDIR, "module_*_paths.json")))
     print(f"Module JSON discovery in {UNZIP_SUBDIR}: {node_count} node files, {path_count} path files")
