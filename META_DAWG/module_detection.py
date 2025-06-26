@@ -470,10 +470,10 @@ if __name__ == '__main__':
     #"KEGG_Graphs_Generated"
     MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated")
     ko_to_modules_str=modules_to_kos()
-    #ko_occ = read_ko_occurence_txt('ko_occurences.txt')
-    ko_occ     = os.path.join(HERE, "Data_Dependencies", "ko_occurences.txt")
-    #adj = make_neighbor_dictionary('ko_normalized_prediction.txt')
-    adj   = os.path.join(HERE, "Data_Dependencies", "ko_normalized_prediction.txt")
+    ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurences.txt")
+    ko_occ = read_ko_occurence_txt(ko_occ_path)
+    adj_path   = os.path.join(HERE, "Data_Dependencies", "ko_normalized_prediction.txt")
+    adj = make_neighbor_dictionary(adj_path)
 
     # Parse input
     if args.format == 'tbl':
