@@ -577,10 +577,11 @@ def main():
 
         hmm_df_dk_new["Modules"] = hmm_df_dk_new["KO id"].map(ko_to_modules_str)
         hmm_df_dk_new = hmm_df_dk_new.dropna(subset=['Modules'])
-        hmm_df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (hmm_df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))    
-
         series = hmm_df_dk_new.set_index("KO id")["Dk_Neighbors"]
         new_dk_dict = series.to_dict()
+
+        hmm_df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (hmm_df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))    
+
 
         hmm_paths = path_probabilities(MODULE_JSON_DIR, hmm_dk_dict, new_dk_dict)
 
