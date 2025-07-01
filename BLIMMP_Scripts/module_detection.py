@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import argparse, os, json, zipfile, glob, pandas as pd, numpy as np
+from math import exp
 
 #Process TBL file
 
@@ -443,9 +444,6 @@ def existing_nonempty_tbl(path):
 
 
 def main():
-    import argparse, os, json, zipfile, glob, pandas as pd, numpy as np
-    from math import exp
-
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
     #parser.add_argument('file', help='Path to the .tblout or .domtblout file')
     parser.add_argument('file',type=existing_nonempty_tbl,help='Path to the .tblout or .domtblout file (must exist, be non-empty, and have correct extension)')
