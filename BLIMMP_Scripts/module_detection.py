@@ -442,14 +442,11 @@ def existing_nonempty_tbl(path):
         raise argparse.ArgumentTypeError(f"File is empty: {path}")
     return path
 
-def format_adjacency(k):
-    nbrs = adj.get(k, {})
-    # 1) comma-sep list of neighbor IDs
-    ids = ",".join(nbrs.keys())
-    # 2) comma-sep list of raw adjacency‐weights
-    wts = ",".join(str(w) for w in nbrs.values())
-    # 3) comma-sep list of neighbor‐diffused probabilities
-    probs = ",".join(str(new_dk.get(j, 0.0)) for j in nbrs.keys())
+def format_adjacency(ko, adjacency_map, diffused_map):
+    nbrs = adjacency_map.get(ko, {})
+    ids   = ",".join(nbrs.keys())
+    wts   = ",".join(str(w) for w in nbrs.values())
+    probs = ",".join(str(diffused_map.get(n, 0.0)) for n in nbrs.keys())
     return ids, wts, probs
 
 def main():
@@ -538,10 +535,7 @@ def main():
         # Path scoring
         new_dk = df_dk_new.set_index('KO id')['Dk_Neighbors'].to_dict()
         df_paths = path_probabilities('KEGG_Graphs_Generated', dk_dict, new_dk)
-
-        df_dk_new[["adjacency_list","adjacency_weight_list","neighbor_Dk_list"]] = df_dk_new["KO id"].apply(lambda k: pd.Series(format_adjacency(k)))
-        
-        # Write outputs
+        df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))
         out_pref = args.output
         out_dir = os.path.dirname(out_pref) or "."
         os.makedirs(out_dir, exist_ok=True)
@@ -583,6 +577,7 @@ def main():
 
         hmm_df_dk_new["Modules"] = hmm_df_dk_new["KO id"].map(ko_to_modules_str)
         hmm_df_dk_new = hmm_df_dk_new.dropna(subset=['Modules'])
+        hmm_df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (hmm_df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))    
 
         series = hmm_df_dk_new.set_index("KO id")["Dk_Neighbors"]
         new_dk_dict = series.to_dict()
