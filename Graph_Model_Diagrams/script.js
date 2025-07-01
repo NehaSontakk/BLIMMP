@@ -6,8 +6,8 @@ let currentLinks = [];
 // SVG layout constants
 const MAX_SVG_W = 1750;
 const BASE_SVG_H = 1200;
-const PAD_T = 20, PAD_R = 250, PAD_B = 20, PAD_L = 300;
-const TOP_OFFSET = 100;
+const PAD_T = 5, PAD_R = 250, PAD_B = 20, PAD_L = 300;
+const TOP_OFFSET = 10;
 
 // Tooltip setup
 const tooltip = d3.select('body')
@@ -15,11 +15,62 @@ const tooltip = d3.select('body')
   .attr('class', 'tooltip')
   .style('position', 'absolute')
   .style('background', 'rgba(255,255,255,0.9)')
-  .style('padding', '6px')
+  .style('padding', '5px')
   .style('border', '1px solid #ccc')
   .style('border-radius', '4px')
   .style('pointer-events', 'none')
   .style('opacity', 0);
+
+// Metadata for modules
+const metaURL = 'https://raw.githubusercontent.com/NehaSontakk/Graph-Viz/refs/heads/main/kegg_bacteria_modules.json';
+let moduleMetaData = null;
+
+// Load metadata once on startup, with explicit OK-check and error handling
+fetch(metaURL)
+  .then(response => {
+    if (!response.ok) throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
+    return response.json();
+  })
+  .then(data => {
+    moduleMetaData = data;
+  })
+  .catch(err => {
+    console.error('Failed to load module metadata:', err);
+    moduleMetaData = {};
+  });
+
+// Function to render module header/info above the graph
+function displayModuleInfo(moduleId) {
+  const container = d3.select('#module-info').html('');
+  if (moduleMetaData === null) {
+    container.text('Loading module metadata...');
+    return;
+  }
+
+  // find category and info
+  let categoryName = null;
+  let info = null;
+  for (const cat in moduleMetaData) {
+    if (moduleMetaData[cat] && moduleMetaData[cat][moduleId]) {
+      categoryName = cat;
+      info = moduleMetaData[cat][moduleId];
+      break;
+    }
+  }
+
+  if (!info) {
+    container.html(`<em>No metadata found for ${moduleId}</em>`);
+    return;
+  }
+
+  container.html(
+    `<h2 style=\"margin-bottom:0.5rem;\">Module ${moduleId}</h2>` +
+    `<p><strong>Category:</strong> ${categoryName}</p>` +
+    `<p><strong>Description:</strong> ${info.Description}</p>`
+  );
+}
+
+
 
 // Compute SVG dimensions
 function getSvgDims() {
@@ -28,7 +79,9 @@ function getSvgDims() {
 }
 
 // Main render function
-export function renderGraph(rawNodes, rawLinks) {
+export function renderGraph(rawNodes, rawLinks, bestPath, moduleId) {
+
+  displayModuleInfo(moduleId);
   currentNodes = rawNodes;
   currentLinks = rawLinks;
 
@@ -61,10 +114,20 @@ defs.append('marker')
   const layout = sugiyamaLayout(rawNodes, rawLinks);
   plotLinks(layout, svg);
   plotNodes(layout.nodes, svg);
-  addLegends(svg, SVG_W);
+  if (bestPath) {
+    addLegends(svg, SVG_W);
+    renderStatsTable(bestPath, moduleId);
+  }
 
   // Resizing
-  window.addEventListener('resize', () => renderGraph(currentNodes, currentLinks));
+  window.addEventListener('resize', () => 
+    renderGraph(
+      currentNodes,
+      currentLinks,
+      window.currentBestPath,
+      window.currentModuleId
+    )
+  );
 }
 
 // Sugiyama layout
@@ -129,21 +192,16 @@ function sugiyamaLayout(rawNodes, rawLinks) {
   return { nodes, links };
 }
 
-
-// Plot nodes
 function plotNodes(nodes, svg) {
-  // Scales
-    const occExtent = d3.extent(nodes, d => d.KO_Occurrence);
-    const rScale = d3.scaleLinear().domain(occExtent).range([5,20]);
-    const occScale = d3.scaleSequential(t => d3.interpolateGreys(0.3 + 0.8 * t)).domain(occExtent);
-    // Brightened blue: sample the top 80% of the palette
-    const dkScale = d3.scaleSequential(d3.interpolateReds).domain([0,1]);
-    const evScale = d3.scaleSequential()
+  const occExtent = d3.extent(nodes, d => d.KO_Occurrence);
+  const rScale = d3.scaleLinear().domain(occExtent).range([5,20]);
+  const occScale = d3.scaleSequential(t => d3.interpolateGreys(0.3 + 0.8 * t)).domain(occExtent);
+  const dkScale = d3.scaleSequential(d3.interpolateReds).domain([0,1]);
+  const evScale = d3.scaleSequential()
     .domain([-50, 0])
     .interpolator(d3.interpolateRgb("#ff0000","white"))
     .clamp(true);
-  
-  
+
   const nodeG = svg.append('g').attr('class','nodes');
 
   nodeG.selectAll('g.node').data(nodes).enter().append('g')
@@ -152,26 +210,33 @@ function plotNodes(nodes, svg) {
     .each(function(d) {
       const g = d3.select(this);
       const r = rScale(d.KO_Occurrence);
+      const baseId = d.id.replace(/_[0-9]+$/, '');
 
-      if (d.Dk_before == null) {
+      // Force START and SINK to be black
+      if (baseId === 'START' || baseId === 'SINK') {
         g.append('circle')
-         .attr('r', r)
-         .attr('fill', occScale(d.KO_Occurrence))
-         .attr('stroke','black')
-         .attr('stroke-width',1);
+          .attr('r', r)
+          .attr('fill', 'black')
+          .attr('stroke', 'black')
+          .attr('stroke-width', 1);
+      } else if (d.Dk_before == null) {
+        g.append('circle')
+          .attr('r', r)
+          .attr('fill', occScale(d.KO_Occurrence))
+          .attr('stroke','black')
+          .attr('stroke-width',1);
       } else {
         // Blue half
         g.append('path')
-         .attr('d', d3.arc().innerRadius(0).outerRadius(r)({
-           startAngle:-Math.PI/2, endAngle:Math.PI/2
-         }))
-         .attr('fill', dkScale(window.useDkAfter ? d.Dk_after : d.Dk_before));
+          .attr('d', d3.arc().innerRadius(0).outerRadius(r)({
+            startAngle:-Math.PI/2, endAngle:Math.PI/2
+          }))
+          .attr('fill', dkScale(window.useDkAfter ? d.Dk_after : d.Dk_before));
 
         // Red half
         const ev = d['E-value'];
         const t  = Math.log10(ev);
         const fillColor = (isFinite(t) ? evScale(t) : "#888888");
-        
         g.append('path')
           .attr('d', d3.arc().innerRadius(0).outerRadius(r)({
             startAngle:  Math.PI/2,
@@ -179,34 +244,31 @@ function plotNodes(nodes, svg) {
           }))
           .attr('fill', fillColor);
 
-        // Draw a thin black line dividing the halves
+        // Divider and outline
         g.append('line')
-        .attr('x1', -r).attr('y1', 0)
-        .attr('x2', r).attr('y2', 0)
-        .attr('stroke', 'black')
-        .attr('stroke-width', 1);
-
-        // Draw an outline circle
+          .attr('x1', -r).attr('y1', 0)
+          .attr('x2', r).attr('y2', 0)
+          .attr('stroke', 'black')
+          .attr('stroke-width', 1);
         g.append('circle')
-        .attr('r', r)
-        .attr('fill','none')
-        .attr('stroke','black')
-        .attr('stroke-width',1);
-       
+          .attr('r', r)
+          .attr('fill','none')
+          .attr('stroke','black')
+          .attr('stroke-width',1);
       }
 
       g.append('text')
-      .text(d.id.replace(/_[0-9]+$/, ''))   // strip trailing “_1”
-      .attr('text-anchor', 'middle')
-      .attr('y', r + 14)
-      .attr('font-size', '12px')
-      .attr('fill', '#000')
-      .attr('pointer-events', 'none');
+        .text(baseId)
+        .attr('text-anchor', 'middle')
+        .attr('y', r + 14)
+        .attr('font-size', '12px')
+        .attr('fill', '#000')
+        .attr('pointer-events', 'none');
 
-      // Tooltip events
+      // Tooltip
       g.on('mouseover', (event) => {
         tooltip.transition().duration(200).style('opacity', 0.98);
-        tooltip.html(`KO: ${d.id.replace(/_[0-9]+$/, '')}<br/>Dk_before: ${d.Dk_before}<br/>Dk_after: ${d.Dk_after}<br/>E-value: ${d['E-value']}`)
+        tooltip.html(`KO: ${baseId}<br/>Dk_before: ${d.Dk_before}<br/>Dk_after: ${d.Dk_after}<br/>E-value: ${d['E-value']}`)
           .style('left', (event.pageX + 5) + 'px')
           .style('top',  (event.pageY - 28) + 'px');
       })
@@ -353,4 +415,38 @@ function addLegends(svg, SVG_W) {
       .text("E-value");
   }
   
-
+  
+  function renderStatsTable(bestPath, moduleId) {
+    // clear old table
+    const container = d3.select('#stats-table-container').html('');
+  
+    const table = container.append('table')
+        .attr('class', 'best-path-table')
+        .style('border-collapse','collapse')
+        .style('margin','20px auto');
+  
+    // header row
+    table.append('thead').append('tr')
+      .selectAll('th')
+      .data(['Module','Best Path','Path probability','Path probability after neighbor influence'])
+      .enter().append('th')
+        .text(d=>d)
+        .style('padding','6px 12px')
+        .style('border','1px solid #ccc')
+        .style('background','#f3f3f3');
+  
+    // single data row
+    const row = table.append('tbody').append('tr');
+    row.selectAll('td')
+      .data([
+        moduleId,
+        bestPath.path_str,
+        bestPath.geo_before.toFixed(4),
+        bestPath.geo_after.toFixed(4)
+      ])
+      .enter().append('td')
+        .text(d=>d)
+        .style('padding','6px 12px')
+        .style('border','1px solid #ccc');
+  }
+  

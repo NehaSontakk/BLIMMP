@@ -11,6 +11,18 @@ let uploadedNodesData = null;
 window.useDkAfter        = false;
 window.currentModuleNodes = null;
 window.currentModuleLinks = null;
+window.currentBestPath    = null;
+let threshold             = 0;
+
+// Attempt to rehydrate from localStorage
+try {
+  const stored = localStorage.getItem('uploadedNodesData');
+  if (stored) uploadedNodesData = JSON.parse(stored);
+} catch {}
+try {
+  const t = parseFloat(localStorage.getItem('moduleThreshold'));
+  if (!isNaN(t)) threshold = t;
+} catch {}
 
 // Simple JSON fetcher
 async function fetchJSON(url) {
@@ -19,89 +31,88 @@ async function fetchJSON(url) {
   return resp.json();
 }
 
-// Ensure DOM is ready before querying elements
+let moduleDataCache = null;
+async function loadAllModules() {
+  if (!moduleDataCache) {
+    const [nodesData, adjData] = await Promise.all([fetchJSON(nodesURL), fetchJSON(adjacencyURL)]);
+    moduleDataCache = { nodesData, adjData };
+  }
+  return moduleDataCache;
+}
+
+// On DOM ready
 window.addEventListener("DOMContentLoaded", () => {
   const uploadInput = document.getElementById("nodeJsonUpload");
   const toggleChk   = document.getElementById("neighborToggle");
   const searchBtn   = document.getElementById("searchBtn");
+  const threshInput = document.getElementById("thresholdInput");
+  const moduleInput = document.getElementById("moduleInput");
 
-  // 1) Handle file-upload control
-  uploadInput.addEventListener("change", async (evt) => {
+  // Restore threshold input
+  if (threshInput) threshInput.value = threshold;
+
+  // Handle input file
+  if (uploadInput) uploadInput.addEventListener("change", async (evt) => {
     const file = evt.target.files[0];
     if (!file) return;
     try {
       const rawText = await file.text();
-      const sanitized = rawText
-        .replace(/\bNaN\b/g, "null")
-        .replace(/\bInfinity\b/g, "null");
+      const sanitized = rawText.replace(/\bNaN\b/g, "null").replace(/\bInfinity\b/g, "null");
       uploadedNodesData = JSON.parse(sanitized);
-      console.log("Custom nodes JSON loaded");
+      localStorage.setItem('uploadedNodesData', JSON.stringify(uploadedNodesData));
+      renderSections && renderSections();
     } catch (err) {
       alert("Failed to parse uploaded JSON:\n" + err.message);
-      uploadedNodesData = null;
     }
   });
 
-  // 2) Handle neighbor-Dk toggle
-  toggleChk.addEventListener("change", () => {
+  // Toggle neighbor-Dk
+  if (toggleChk) toggleChk.addEventListener("change", () => {
     window.useDkAfter = toggleChk.checked;
-    if (window.currentModuleNodes && window.currentModuleLinks) {
-      renderGraph(window.currentModuleNodes, window.currentModuleLinks);
-    }
+    if (window.currentModuleNodes) renderGraph(window.currentModuleNodes, window.currentModuleLinks, window.currentBestPath, window.currentModuleId);
   });
 
-  // 3) Main search button handler
-  searchBtn.addEventListener("click", async () => {
-    const moduleId = document.getElementById("moduleInput").value.trim();
-    if (moduleId.length !== 6) {
-      alert("Module ID must be exactly 6 characters (e.g. M00001).");
-      return;
-    }
+  // Apply threshold button (if exists)
+  if (document.getElementById('applyBtn')) {
+    document.getElementById('applyBtn').addEventListener('click', () => {
+      const val = parseFloat(threshInput.value);
+      threshold = isNaN(val) ? 0 : val;
+      localStorage.setItem('moduleThreshold', threshold);
+      renderSections && renderSections();
+    });
+  }
 
-    try {
-      // Fetch fallback data
-      const [allNodesData, allAdjData] = await Promise.all([
-        fetchJSON(nodesURL),
-        fetchJSON(adjacencyURL)
-      ]);
-
-      // Choose uploaded JSON if available, else fallback
-      let moduleNodes = (uploadedNodesData && uploadedNodesData[moduleId])
-                         || allNodesData[moduleId];
-      if (!moduleNodes) {
-        alert(`Module ${moduleId} not found in nodes data.`);
-        return;
-      }
-
-      // If enriched format { nodes: [...] }, unwrap
-      if (moduleNodes.nodes && Array.isArray(moduleNodes.nodes)) {
-        moduleNodes = moduleNodes.nodes;
-      }
-      if (!Array.isArray(moduleNodes)) {
-        alert(`Unexpected node data format for module ${moduleId}.`);
-        return;
-      }
-
-      // Ensure each node has a radius property
-      moduleNodes.forEach(n => { n["node-radius"] ??= 10; });
-
-      // Load adjacency links
-      const adjObj = allAdjData[moduleId];
-      if (!adjObj) {
-        alert(`Module ${moduleId} not found in adjacency data.`);
-        return;
-      }
-      const moduleLinks = adjObj.links;
-
-      // Store for toggle re-render
-      window.currentModuleNodes = moduleNodes;
-      window.currentModuleLinks = moduleLinks;
-
-      // Render
-      renderGraph(moduleNodes, moduleLinks);
-    } catch (err) {
-      console.error(err);
-      alert("Error loading module data. See console for details.");
-    }
+  // Main search
+  if (searchBtn) searchBtn.addEventListener("click", async () => {
+    const moduleId = moduleInput.value.trim();
+    if (moduleId.length !== 6) return alert("Module ID must be 6 chars e.g. M00001");
+    // persist threshold
+    localStorage.setItem('moduleThreshold', threshold);
+    // fetch modules
+    const { nodesData: allNodesData, adjData: allAdjData } = await loadAllModules();
+    let moduleNodes = (uploadedNodesData?.[moduleId]?.nodes) || allNodesData[moduleId]?.nodes;
+    if (!Array.isArray(moduleNodes)) moduleNodes = allNodesData[moduleId]?.nodes;
+    if (!moduleNodes) return alert(`Module ${moduleId} not found`);
+    moduleNodes.forEach(n => n["node-radius"] ??= 10);
+    const links = allAdjData[moduleId]?.links;
+    if (!links) return alert(`Links for ${moduleId} not found`);
+    window.currentModuleId    = moduleId;
+    window.currentModuleNodes = moduleNodes;
+    window.currentModuleLinks = links;
+    window.currentBestPath    = uploadedNodesData?.[moduleId]?.best_path || allNodesData[moduleId]?.best_path;
+    renderGraph(moduleNodes, links, window.currentBestPath, moduleId);
   });
+
+  // Auto-search if URL has module param
+  const params = new URLSearchParams(window.location.search);
+  const m = params.get('module');
+  if (m) {
+    moduleInput.value = m;
+    // trigger upload and threshold if stored, then click
+    if (uploadedNodesData) renderSections && renderSections();
+    searchBtn.click();
+  }
 });
+
+// Optional: expose threshold to renderSections in module.html
+window.getModuleThreshold = () => threshold;
