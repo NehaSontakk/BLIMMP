@@ -327,7 +327,7 @@ def path_probabilities(module_json_dir, dk_map_before, dk_map_after):
     df_best = df_best[columns_order]
     return df_best
 
-def modules_to_kos():
+def modules_to_kos(MODULE_JSON_DIR):
   ko_to_modules = {}
   pattern = os.path.join(MODULE_JSON_DIR, "module_*_nodes.json")
   for filepath in glob.glob(pattern):
@@ -509,7 +509,7 @@ def main():
 
     MODULE_JSON_DIR = os.path.join(HERE, "Graph_Dependencies", "KEGG_Graphs_Generated/KEGG_Module_Graphs/")
 
-    ko_to_modules_str=modules_to_kos()
+    ko_to_modules_str=modules_to_kos(MODULE_JSON_DIR)
     ko_occ_path     = os.path.join(HERE, "Data_Dependencies", "ko_occurrences.txt")
     ko_occ = read_ko_occurence_txt(ko_occ_path)
     adj_path   = os.path.join(HERE, "Data_Dependencies", "ko_neighbors.txt")
