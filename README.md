@@ -1,12 +1,14 @@
 # BLIMMP
 
-conda create -n something
+conda create -n BLIMMP-test
+
+git clone this repo
 
 cd BLIMMP
 
 pip install .
 
-python META_DAWG/module_detection.py -h
+python BLIMMP_Scripts/module_detection.py -h
 
 python META_DAWG/module_detection.py ./Examples/example.domtblout \
 	--format domtblout \
