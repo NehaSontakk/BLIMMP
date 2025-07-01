@@ -442,6 +442,15 @@ def existing_nonempty_tbl(path):
         raise argparse.ArgumentTypeError(f"File is empty: {path}")
     return path
 
+def format_adjacency(k):
+    nbrs = adj.get(k, {})
+    # 1) comma-sep list of neighbor IDs
+    ids = ",".join(nbrs.keys())
+    # 2) comma-sep list of raw adjacency‐weights
+    wts = ",".join(str(w) for w in nbrs.values())
+    # 3) comma-sep list of neighbor‐diffused probabilities
+    probs = ",".join(str(new_dk.get(j, 0.0)) for j in nbrs.keys())
+    return ids, wts, probs
 
 def main():
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
@@ -530,6 +539,8 @@ def main():
         new_dk = df_dk_new.set_index('KO id')['Dk_Neighbors'].to_dict()
         df_paths = path_probabilities('KEGG_Graphs_Generated', dk_dict, new_dk)
 
+        df_dk_new[["adjacency_list","adjacency_weight_list","neighbor_Dk_list"]] = df_dk_new["KO id"].apply(lambda k: pd.Series(format_adjacency(k)))
+        
         # Write outputs
         out_pref = args.output
         out_dir = os.path.dirname(out_pref) or "."
