@@ -389,7 +389,7 @@ def export_module_data_with_best_path(
                 'geo_after':   float(bp['geo_after']),
             }
 
-    aggregated = {}
+    aggregated = {} 
     for node_file in glob.glob(os.path.join(module_json_dir, "module_*_nodes.json")):
         module_id = os.path.basename(node_file).split("_")[1]
         with open(node_file) as f:
