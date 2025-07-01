@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-import glob
-import pandas as pd
-import numpy as np
-from math import exp
-import json
-import argparse
-import zipfile
 
 #Process TBL file
 
@@ -450,7 +442,10 @@ def existing_nonempty_tbl(path):
     return path
 
 
-if __name__ == '__main__':
+def main():
+    import argparse, os, json, zipfile, glob, pandas as pd, numpy as np
+    from math import exp
+
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
     #parser.add_argument('file', help='Path to the .tblout or .domtblout file')
     parser.add_argument('file',type=existing_nonempty_tbl,help='Path to the .tblout or .domtblout file (must exist, be non-empty, and have correct extension)')
@@ -603,3 +598,6 @@ if __name__ == '__main__':
             
         print(f"Diagram reports written to {out_pref}_nodes_enriched.csv")
         print(f"Open HTML file index.html in a local browser. Upload {out_pref}_nodes_enriched.json when prompted.")
+
+if __name__ == "__main__":
+    main()
