@@ -522,7 +522,7 @@ def main():
         df_conf    = calculate_hit_confidence_log(df_grouped.reset_index(), e_threshold=1e-5)
         df_conf    = df_conf.sort_values('score', ascending=False).drop_duplicates(subset='KO id')
         # Merge with all KOs
-        ko_modules = modules_to_kos()
+        ko_modules = modules_to_kos(MODULE_JSON_DIR)
         all_kos = sorted(ko_modules.keys())
         df_master = pd.DataFrame({'KO id': all_kos})
         df_all = df_master.merge(df_conf, on='KO id', how='left').fillna({'score':0,'E-value':100.0,'hmm from':0,'hmm to':0,'ali from':0,'ali to':0})
