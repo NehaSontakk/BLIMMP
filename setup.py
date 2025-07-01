@@ -1,19 +1,18 @@
 from setuptools import setup, find_packages
 
 setup(
-  name="meta-dawg",
+  name="BLIMMP",
   version="0.1.0",
   author="Neha Sontakke",
   license="MIT",
   packages=find_packages(),
   install_requires=[
     "pandas>=1.5",
-    "numpy>=1.23",
-    # etc.
+    "numpy>=1.23"
   ],
   entry_points={
     "console_scripts": [
-      "meta-dawg=meta_dawg.module_detection:main",
+      "BLIMMP=BLIMMP_Scripts.module_detection:main",
     ],
   },
 )
