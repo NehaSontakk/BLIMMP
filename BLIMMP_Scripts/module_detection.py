@@ -11,7 +11,7 @@ def process_tbl(location):
     return pd.read_csv(location, header=None, skiprows=2, skipfooter=8,
                        names=cols, sep=r"\s+", engine='python')
 
-#Process HMM result files                       
+#Process HMM result files                                              
 def process_domtblout(path):
     cols = [
         'target name', 'target_accession', 'tlen', 'query_name',
@@ -22,7 +22,7 @@ def process_domtblout(path):
     ]
 
     # skiprows=3 to drop the first 3 lines
-    # skipfooter=10 to drop the last 10 lines (requires engine='python')
+    # skipfooter=10 to drop the last 10 lines 
     df = pd.read_csv(
         path,
         comment='#',
@@ -39,11 +39,7 @@ def process_domtblout(path):
         engine='python'
     )
 
-    df.rename(columns={
-        'query_name': 'KO id',
-        'i_score':    'score',
-        'i_Evalue':   'E-value'
-    }, inplace=True)
+    df.rename(columns={'query_name': 'KO id','i_score':'score','i_Evalue':'E-value'}, inplace=True)
 
     # compute inclusive lengths and filter out any zero‐length hits
     df['ali_len'] = abs(df['ali to'] - df['ali from'])
@@ -55,7 +51,7 @@ def process_domtblout(path):
     # drop the helper columns
     df.drop(columns=['ali_len','hmm_len'], inplace=True)
 
-    return df              
+    return df            
 
 # Get the clusters/group data
 
@@ -453,8 +449,8 @@ def main():
     parser = argparse.ArgumentParser(description='Process BATH/HMMER output (tbl or domtblout)')
     #parser.add_argument('file', help='Path to the .tblout or .domtblout file')
     parser.add_argument('file',type=existing_nonempty_tbl,help='Path to the .tblout or .domtblout file (must exist, be non-empty, and have correct extension)')
-    parser.add_argument('-f', '--format', choices=['tbl','domtblout'], required=True,
-                        help='Specify which HMMER output format to parse')
+    #parser.add_argument('-f', '--format', choices=['tbl','domtblout'], required=True,help='Specify which HMMER output format to parse')
+    parser.add_argument('-f', '--format', choices=['domtblout'], required=True,help='Specify HMMER output format to parse')
     parser.add_argument('-c','--completeness', type=completeness_float,default=1.0,help='Completeness of sample obtained via CHECKM or BUSCO (0.0–1.0). Defaults to 1.0.')
     parser.add_argument('-o', '--output', required=True,
                         help='Output prefix or directory for CSV reports')
@@ -514,46 +510,47 @@ def main():
 
     # Parse input
     if args.format == 'tbl':
-        df_hits = process_tbl(args.file)
-        df_grouped = assign_overlap_groups(df_hits)
-        df_conf    = calculate_hit_confidence_log(df_grouped.reset_index(), e_threshold=1e-5)
-        df_conf    = df_conf.sort_values('score', ascending=False).drop_duplicates(subset='KO id')
-        # Merge with all KOs
-        ko_modules = modules_to_kos(MODULE_JSON_DIR)
-        all_kos = sorted(ko_modules.keys())
-        df_master = pd.DataFrame({'KO id': all_kos})
-        df_all = df_master.merge(df_conf, on='KO id', how='left').fillna({'score':0,'E-value':100.0,'hmm from':0,'hmm to':0,'ali from':0,'ali to':0})
+        print("Add a .domtblout file.")
+        # df_hits = process_tbl(args.file)
+        # df_grouped = assign_overlap_groups(df_hits)
+        # df_conf    = calculate_hit_confidence_log(df_grouped.reset_index(), e_threshold=1e-5)
+        # df_conf    = df_conf.sort_values('score', ascending=False).drop_duplicates(subset='KO id')
+        # # Merge with all KOs
+        # ko_modules = modules_to_kos(MODULE_JSON_DIR)
+        # all_kos = sorted(ko_modules.keys())
+        # df_master = pd.DataFrame({'KO id': all_kos})
+        # df_all = df_master.merge(df_conf, on='KO id', how='left').fillna({'score':0,'E-value':100.0,'hmm from':0,'hmm to':0,'ali from':0,'ali to':0})
 
-        # Dk calculation
-        df_dk  = calculate_dk_per_ko(ko_occ, df_all, sigma)
-        dk_dict = dict(zip(df_dk['KO id'], df_dk['Dk']))
-        # Neighbor diffusion
-        df_spring = spring_update_probabilities(dk_dict, adj, alpha=0.6)
-        df_dk_new = df_dk.merge(df_spring, on='KO id', how='left').fillna({'Dk_Neighbors':0.0})
-        df_dk_new['Modules'] = df_dk_new['KO id'].map(ko_modules)
+        # # Dk calculation
+        # df_dk  = calculate_dk_per_ko(ko_occ, df_all, sigma)
+        # dk_dict = dict(zip(df_dk['KO id'], df_dk['Dk']))
+        # # Neighbor diffusion
+        # df_spring = spring_update_probabilities(dk_dict, adj, alpha=0.6)
+        # df_dk_new = df_dk.merge(df_spring, on='KO id', how='left').fillna({'Dk_Neighbors':0.0})
+        # df_dk_new['Modules'] = df_dk_new['KO id'].map(ko_modules)
 
-        # Path scoring
-        new_dk = df_dk_new.set_index('KO id')['Dk_Neighbors'].to_dict()
-        df_paths = path_probabilities('KEGG_Graphs_Generated', dk_dict, new_dk)
-        df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))
-        out_pref = args.output
-        out_dir = os.path.dirname(out_pref) or "."
-        os.makedirs(out_dir, exist_ok=True)
-        df_dk_new.to_csv(f"{out_pref}_dk.csv", index=False)
-        df_paths.to_csv(f"{out_pref}_paths.csv", index=False)
-        print(f"Reports written to {out_pref}_dk.csv and {out_pref}_paths.csv")
+        # # Path scoring
+        # new_dk = df_dk_new.set_index('KO id')['Dk_Neighbors'].to_dict()
+        # df_paths = path_probabilities('KEGG_Graphs_Generated', dk_dict, new_dk)
+        # df_dk_new[['adjacency_list','adjacency_weight_list','neighbor_Dk_list']] = (df_dk_new['KO id'].apply(lambda k: pd.Series(format_adjacency(k, adj, new_dk),index=['adjacency_list','adjacency_weight_list','neighbor_Dk_list'])))
+        # out_pref = args.output
+        # out_dir = os.path.dirname(out_pref) or "."
+        # os.makedirs(out_dir, exist_ok=True)
+        # df_dk_new.to_csv(f"{out_pref}_dk.csv", index=False)
+        # df_paths.to_csv(f"{out_pref}_paths.csv", index=False)
+        # print(f"Reports written to {out_pref}_dk.csv and {out_pref}_paths.csv")
         
-        export_module_data_with_best_path(
-            module_json_dir=MODULE_JSON_DIR,
-            ko_occ_df=ko_occ,
-            dk_before=dk_dict,
-            evalue=dict(zip(df_dk['KO id'], df_dk['E-value'].replace(np.nan,100.0))),
-            dk_after=new_dk,
-            df_best_paths=df_paths,
-            output_path=f"{out_pref}_modules_enriched.json"
-        )
-        print(f"Diagram reports written to {out_pref}_nodes_enriched.csv")
-        print(f"Open HTML file index.html in a local browser. Upload {out_pref}_nodes_enriched.json when prompted.")
+        # export_module_data_with_best_path(
+        #     module_json_dir=MODULE_JSON_DIR,
+        #     ko_occ_df=ko_occ,
+        #     dk_before=dk_dict,
+        #     evalue=dict(zip(df_dk['KO id'], df_dk['E-value'].replace(np.nan,100.0))),
+        #     dk_after=new_dk,
+        #     df_best_paths=df_paths,
+        #     output_path=f"{out_pref}_modules_enriched.json"
+        # )
+        # print(f"Diagram reports written to {out_pref}_nodes_enriched.csv")
+        # print(f"Open HTML file index.html in a local browser. Upload {out_pref}_nodes_enriched.json when prompted.")
     else:
         hmm_hits = process_domtblout(args.file)
         hmm_groups = assign_overlap_groups(hmm_hits)
